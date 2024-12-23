@@ -1,12 +1,20 @@
-// [[Rcpp::depends(BH)]]
-
 #include <Rcpp.h>
 #include <iostream>
 #include <fstream>
-#include <boost/algorithm/string.hpp>
+
 
 using namespace Rcpp;
 using namespace std;
+
+
+const string WHITESPACE = " \n\r\t\f\v";
+
+string trim(const string &str) {
+  size_t start = str.find_first_not_of(WHITESPACE);
+  string lstr = (start == string::npos) ? "" : str.substr(start);
+  size_t end = lstr.find_last_not_of(WHITESPACE);
+  return (end == string::npos) ? "" : lstr.substr(0, end + 1);
+}
 
 
 //' Mark duplicates in the FASTQ file
@@ -33,15 +41,15 @@ DataFrame mark_duplicates(std::string fq_file, int min_read_num) {
   {
     if(line.substr(0, 1) == "@") {
       getline(fin, line);
-      boost::trim(line);
-      map<string, int>::iterator it = read2num.find(line);
+      string read = trim(line);
+      map<string, int>::iterator it = read2num.find(read);
       if (it != read2num.end())
       {
         it->second = it->second + 1;
       }
       else
       {
-        read2num[line] = 1;
+        read2num[read] = 1;
       }
       getline(fin, line);
       getline(fin, line);
