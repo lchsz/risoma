@@ -1,0 +1,23 @@
+---
+title: "risoma"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{risoma}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(risoma)
+```
+
+# risoma: Mining Expression Atlas of IsomiRs Based on Small RNA Sequencing
+
+risoma is an R package developed to address the need for a comprehensive source of functions for constructing isomiR expression atlases using small RNA sequencing (RNA-seq) experiments. The primary goal of risoma is to provide an intuitive framework for identifying and constructing expression profiles. The package includes functions to assist with various tasks, such as detecting isomiRs, assessing expression metrics across different tissues and developmental stages, calculating tissue specificity indices to evaluate gene expression specificity, clustering, and visualizing expression patterns.
