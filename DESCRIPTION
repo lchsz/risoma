@@ -11,6 +11,7 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     dplyr,
+    pheatmap,
     Rcpp
 RoxygenNote: 7.3.2
 LinkingTo: 
