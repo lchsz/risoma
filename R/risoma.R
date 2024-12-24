@@ -76,9 +76,29 @@ detect_isoform <- function(sample_info_file,
                            max_ed_3p = 3,
                            min_tpm = 2) {
   mirnas <- load_mirna(spe, word_size)
-  meta_data <- read.csv(sample_info_file, stringsAsFactors = FALSE)
+  meta_data <- read.csv(sample_info_file, stringsAsFactors = FALSE,
+                        comment.char = "#")
+
+  dup_sample <- meta_data$sample[duplicated(meta_data$sample)]
+  if (length(dup_sample) != 0) {
+    stop("Duplicated sample name: ", paste(dup_sample, collapse = ", "))
+  }
+
+  dup_fq <- meta_data$fq[duplicated(meta_data$fq)]
+  if (length(dup_fq) != 0) {
+    stop("Duplicated FASTQ files:", paste(dup_fq, collapse = ", "))
+  }
+
   rownames(meta_data) <- meta_data$sample
   group <- split(meta_data, meta_data$tissue)
+
+  rep_num <- sapply(group, function(x) nrow(x))
+  rep_one <- rep_num[rep_num < 2]
+  if (length(rep_one) != 0) {
+    stop("At least two replicates are required for tissu/treatment: ",
+         paste(names(rep_one), collapse = ", "))
+  }
+
   lapply(
     group,
     detect_tissue,
