@@ -10,7 +10,7 @@
 #' @return a data.frame with columns: mature_id, read_seq, read_num and dist
 #'
 #' @export
-detect_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
+detect_one <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
   reads <- mark_duplicates(fq_file, 1)
   isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p)
   return(isoforms)
@@ -19,11 +19,14 @@ detect_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
 
 #' Detect isoforms from a tissue consist of several duplicates
 #'
-#' @param sample_info description
+#' @param sample_info A data.frame with sample name, fq and group information
+#'   for replicates in a tissu/treatment
 #' @param mirnas A data.frame storing mature miRNA ID, mature miRNA sequence,
-#'    mature start, seed on miRNA, precursor ID and precursor sequence
-#' @param max_ed_5p the maximum distance between 5’ region of reads with reference miRNA
-#' @param max_ed_3p the maximum distance between 3' region of reads with reference miRNA
+#'   mature start, seed on miRNA, precursor ID and precursor sequence
+#' @param max_ed_5p the maximum distance between 5’ region of reads with
+#'   reference miRNA
+#' @param max_ed_3p the maximum distance between 3' region of reads with
+#'   reference miRNA
 #' @param min_tpm a isomiR is defined as “expressed” only when the TPM of all
 #'    biological replicates were greater than or equal to the threshold set
 #' @return a list
@@ -35,12 +38,12 @@ detect_tissue <- function(sample_info,
                           max_ed_3p,
                           min_tpm) {
   tissue_isoforms <- apply(sample_info, 1, function(x) {
-    sample_name <- x["sample"]
+    sample_name <- x["name"]
     fq_file <- x["fq"]
     message("detecting isoform for sample: ", sample_name)
-    sample_isoforms <- detect_sample(fq_file, mirnas, max_ed_5p, max_ed_3p)
-    sample_isoforms$tpm <- calc_expr(sample_isoforms)
-    subset(sample_isoforms, tpm >= min_tpm)
+    isoforms <- detect_one(fq_file, mirnas, max_ed_5p, max_ed_3p)
+    isoforms$tpm <- calc_expr(isoforms)
+    subset(isoforms, tpm >= min_tpm)
   })
 
   read_seqs <- tissue_isoforms[[1]]$read_seq
@@ -48,17 +51,17 @@ detect_tissue <- function(sample_info,
     read_seqs <- intersect(read_seqs, tissue_isoforms[[i]]$read_seq)
   }
 
-  lapply(tissue_isoforms, function(sample_isoforms) {
-    sample_isoforms <- subset(sample_isoforms, read_seq %in% read_seqs)
-    cigars <- calc_cigar(sample_isoforms)
-    sample_isoforms$id <- paste0(sample_isoforms$mature_id, "-", cigars)
-    sample_isoforms
+  lapply(tissue_isoforms, function(isoforms) {
+    isoforms <- subset(isoforms, read_seq %in% read_seqs)
+    cigars <- calc_cigar(isoforms)
+    isoforms$id <- paste0(isoforms$mature_id, "-", cigars)
+    isoforms
   })
 }
 
 
-#' Detect isoform based on the metadata file containing sample name, tissue and
-#' FASTQ path
+#' Detect isoform based on the sample infomation file containing sample name,
+#' tissue/treatment and FASTQ path
 #'
 #' @param sample_info_file description
 #' @param spe description
@@ -79,9 +82,9 @@ detect_isoform <- function(sample_info_file,
   meta_data <- read.csv(sample_info_file, stringsAsFactors = FALSE,
                         comment.char = "#")
 
-  dup_sample <- meta_data$sample[duplicated(meta_data$sample)]
-  if (length(dup_sample) != 0) {
-    stop("Duplicated sample name: ", paste(dup_sample, collapse = ", "))
+  dup_name <- meta_data$name[duplicated(meta_data$name)]
+  if (length(dup_name) != 0) {
+    stop("Duplicated sample name: ", paste(dup_name, collapse = ", "))
   }
 
   dup_fq <- meta_data$fq[duplicated(meta_data$fq)]
@@ -89,8 +92,13 @@ detect_isoform <- function(sample_info_file,
     stop("Duplicated FASTQ files:", paste(dup_fq, collapse = ", "))
   }
 
-  rownames(meta_data) <- meta_data$sample
-  group <- split(meta_data, meta_data$tissue)
+  no_fq <- meta_data$fq[!file.exists(meta_data$fq)]
+  if (length(no_fq) != 0) {
+    stop("FASTQ files do not exists: ", paste(no_fq, collapse = ", "))
+  }
+
+  row.names(meta_data) <- meta_data$name
+  group <- split(meta_data, meta_data$group)
 
   rep_num <- sapply(group, function(x) nrow(x))
   rep_one <- rep_num[rep_num < 2]
@@ -110,16 +118,16 @@ detect_isoform <- function(sample_info_file,
 }
 
 
-#' Extract isomiRs from isoforms
+#' Extract isomiRs from a list containing all isoforms
 #'
-#' @param isoforms description
-#' @return description
+#' @param all_isoforms a list containing all isoforms
+#' @return a list of all isomiRs
 #'
 #' @export
-generate_isomir <- function(isoforms) {
-  lapply(isoforms, function(tissu_isoform) {
-    lapply(tissu_isoform, function(sample_isoform) {
-      group <- dplyr::group_by(sample_isoform, read_seq)
+generate_isomir <- function(all_isoforms) {
+  lapply(all_isoforms, function(tissu_isoforms) {
+    lapply(tissu_isoforms, function(isoforms) {
+      group <- dplyr::group_by(isoforms, read_seq)
       group <- dplyr::mutate(group, ids = paste(id, collapse = ","))
       group <- dplyr::distinct(group, read_seq, .keep_all = T)
       as.data.frame(dplyr::ungroup(dplyr::select(group, -mature_id)))
@@ -127,36 +135,42 @@ generate_isomir <- function(isoforms) {
   })
 }
 
-#' Extract expression profile from isomiRs
+
+
+
+
+#' Extract expression profile of each tissue/treatment from isomiRs
 #'
-#' @param isomirs description
+#' @param isomirs isomiRs of all samples
 #' @return a data.frame
 #'
 #' @export
-generate_expr <- function(isomirs) {
-  tissue_expr <- lapply(isomirs, function(tissu_isomir) {
-    sampel_name <- names(tissu_isomir[1])
-    sample_isomir <- tissu_isomir[[1]]
-    sample_isomir <- subset(sample_isomir, dist > 0)
+group_expr <- function(isomirs) {
+  expr_list <- lapply(isomirs, function(tissu_isomirs) {
+    sample_isomir <- tissu_isomirs[[1]]
+    # sample_isomir <- subset(sample_isomir, dist > 0)
     sample_expr <- sample_isomir[, c("read_seq", "tpm")]
-    colnames(sample_expr)[colnames(sample_expr) == "tpm"] <- sampel_name
-    for (i in  seq_along(tissu_isomir)[-1]) {
-      sampel_name <- names(tissu_isomir[i])
-      sample_isomir <- tissu_isomir[[i]]
-      sample_isomir <- subset(sample_isomir, dist > 0)
+    for (i in seq_along(tissu_isomirs)[-1]) {
+      sample_isomir <- tissu_isomirs[[i]]
+      # sample_isomir <- subset(sample_isomir, dist > 0)
       sample_expr_temp <- sample_isomir[, c("read_seq", "tpm")]
-      colnames(sample_expr_temp)[colnames(sample_expr_temp) == "tpm"] <-
-        sampel_name
       sample_expr <- merge(x = sample_expr, y = sample_expr_temp, by = "read_seq")
     }
-    sample_expr
+    row.names(sample_expr) <- sample_expr$read_seq
+    sample_expr$read_seq <- NULL
+    data.frame(read_seq = row.names(sample_expr),
+               tpm = apply(sample_expr, 1, function(x) mean(x)))
   })
 
-  expr <- tissue_expr[[1]]
-  for (i in  seq_along(tissue_expr)[-1]) {
+  expr <- expr_list[[1]]
+  colnames(expr)[colnames(expr) == "tpm"] <- names(expr_list[1])
+
+  for (i in  seq_along(expr_list)[-1]) {
+    expr_temp <- expr_list[[i]]
+    colnames(expr_temp)[colnames(expr_temp) == "tpm"] <- names(expr_list[i])
     expr <- merge(
       x = expr,
-      y = tissue_expr[[i]],
+      y = expr_temp,
       by = "read_seq",
       all = TRUE
     )
@@ -165,7 +179,7 @@ generate_expr <- function(isomirs) {
   expr$read_seq <- NULL
   expr[is.na(expr)] = 0
 
-  expr
+  return(expr)
 }
 
 
@@ -175,30 +189,86 @@ generate_expr <- function(isomirs) {
 #' @param scale description
 #'
 #' @export
-draw_heatmap <- function(expr, scale = "row") {
+plot_expr <- function(expr, scale = "row") {
   pheatmap::pheatmap(expr, scale = scale)
 }
 
 
-calc_cigar <- function(isoforms) {
-  result <- NULL
-  if (nrow(isoforms > 0)) {
-    queries <- Biostrings::DNAStringSet(isoforms$read_seq)
-    subjects <- Biostrings::DNAStringSet(isoforms$mature_seq)
-
-    query_num <- length(queries)
-    cigars <- vector("character", query_num)
-
-    sub_mat <- pwalign::nucleotideSubstitutionMatrix(match = 1, mismatch = 0)
-
-    for (i in seq_len(query_num)) {
-      query <- queries[i]
-      subject <- subjects[i]
-      ss <- pw_aln(query, subject, sub_mat)
-      cigar <- get_cigar(ss[1], ss[2])
-      cigars[i] <- cigar
+#' Extract expression profile of each sample replicate from isomiRs
+#'
+#' @param isomirs isomiRs of all samples
+#' @return a data.frame
+#'
+#' @export
+generate_expr <- function(isomirs) {
+  expr_list <- lapply(isomirs, function(tissu_isomirs) {
+    sample_name <- names(tissu_isomirs[1])
+    sample_isomirs <- tissu_isomirs[[1]]
+    sample_isomirs <- subset(sample_isomirs, dist > 0)
+    sample_expr <- sample_isomirs[, c("read_seq", "tpm")]
+    colnames(sample_expr)[colnames(sample_expr) == "tpm"] <- sample_name
+    for (i in  seq_along(tissu_isomirs)[-1]) {
+      sample_name <- names(tissu_isomirs[i])
+      sample_isomirs <- tissu_isomirs[[i]]
+      sample_isomirs <- subset(sample_isomirs, dist > 0)
+      sample_expr_temp <- sample_isomirs[, c("read_seq", "tpm")]
+      colnames(sample_expr_temp)[colnames(sample_expr_temp) == "tpm"] <- sample_name
+      sample_expr <- merge(x = sample_expr, y = sample_expr_temp, by = "read_seq")
     }
-  }
+    sample_expr
+  })
 
-  return(cigars)
+  expr <- expr_list[[1]]
+  for (i in  seq_along(expr_list)[-1]) {
+    expr <- merge(
+      x = expr,
+      y = expr_list[[i]],
+      by = "read_seq",
+      all = TRUE
+    )
+  }
+  row.names(expr) <- expr$read_seq
+  expr$read_seq <- NULL
+  expr[is.na(expr)] = 0
+
+  return(expr)
+}
+
+
+#' Extract CIGAR of each sample replicate from isomiRs
+#'
+#' @param isomirs isomiRs of all samples
+#' @return a data.frame
+#'
+#' @export
+generate_cigar <- function(isomirs) {
+  cigar_list <- lapply(isomirs, function(tissu_isomirs) {
+    sample_name <- names(tissu_isomirs[1])
+    sample_isomirs <- tissu_isomirs[[1]]
+    sample_cigar <- sample_isomirs[, c("read_seq", "id")]
+    colnames(sample_cigar)[colnames(sample_cigar) == "id"] <- sample_name
+    for (i in  seq_along(tissu_isomirs)[-1]) {
+      sample_name <- names(tissu_isomirs[i])
+      sample_isomirs <- tissu_isomirs[[i]]
+      sample_cigar_temp <- sample_isomirs[, c("read_seq", "id")]
+      colnames(sample_cigar_temp)[colnames(sample_cigar_temp) == "id"] <- sample_name
+      sample_cigar <- merge(x = sample_cigar, y = sample_cigar_temp, by = "read_seq")
+    }
+    sample_cigar
+  })
+
+  cigar <- cigar_list[[1]]
+  for (i in  seq_along(cigar_list)[-1]) {
+    cigar <- merge(
+      x = cigar,
+      y = cigar_list[[i]],
+      by = "read_seq",
+      all = TRUE
+    )
+  }
+  row.names(cigar) <- cigar$read_seq
+  cigar$read_seq <- NULL
+  cigar[is.na(cigar)] = ""
+
+  return(cigar)
 }

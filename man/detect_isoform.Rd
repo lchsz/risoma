@@ -2,8 +2,8 @@
 % Please edit documentation in R/risoma.R
 \name{detect_isoform}
 \alias{detect_isoform}
-\title{Detect isoform based on the metadata file containing sample name, tissue and
-FASTQ path}
+\title{Detect isoform based on the sample infomation file containing sample name,
+tissue/treatment and FASTQ path}
 \usage{
 detect_isoform(
   sample_info_file,
@@ -31,6 +31,6 @@ detect_isoform(
 description
 }
 \description{
-Detect isoform based on the metadata file containing sample name, tissue and
-FASTQ path
+Detect isoform based on the sample infomation file containing sample name,
+tissue/treatment and FASTQ path
 }

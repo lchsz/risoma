@@ -2,16 +2,16 @@
 % Please edit documentation in R/risoma.R
 \name{generate_isomir}
 \alias{generate_isomir}
-\title{Extract isomiRs from isoforms}
+\title{Extract isomiRs from a list containing all isoforms}
 \usage{
-generate_isomir(isoforms)
+generate_isomir(all_isoforms)
 }
 \arguments{
-\item{isoforms}{description}
+\item{all_isoforms}{a list containing all isoforms}
 }
 \value{
-description
+a list of all isomiRs
 }
 \description{
-Extract isomiRs from isoforms
+Extract isomiRs from a list containing all isoforms
 }
