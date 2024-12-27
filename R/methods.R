@@ -1,46 +1,4 @@
-setClass(
-  "IsomirDataSet",
-  slots = c(
-    isoformList = "ANY",
-    expr = "ANY",
-    isomirList = "ANY"
-  )
-)
 
-#' ================================= Generics =================================
-setGeneric("plotExpr", function(x)
-  standardGeneric("plotExpr"))
-
-
-setGeneric("exIsomirByRef", function(x, ref)
-  standardGeneric("exIsomirByRef"))
-
-
-setGeneric("hasRef", function(x)
-  standardGeneric("hasRef"))
-
-
-setGeneric("getRef", function(x)
-  standardGeneric("getRef"))
-
-
-setGeneric("exExpr", function(x, ref)
-  standardGeneric("exExpr"))
-
-
-setGeneric("alnIsoforms", function(x, ref)
-  standardGeneric("alnIsoforms"))
-
-
-
-
-#' ==================  Methods ======================
-
-#' Cluster and visualize expression profile
-#'
-#' @param expr description
-#'
-#' @export
 setMethod("plotExpr", "IsomirDataSet", function(x) {
   pheatmap::pheatmap(x@expr, scale = "row")
 })
@@ -86,6 +44,3 @@ setMethod("alnIsoforms", "IsomirDataSet", function(x, ref) {
   seqAln <- msa::msa(seqs, order = "input")
   Biostrings::DNAStringSet(seqAln)
 })
-
-
-
