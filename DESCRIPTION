@@ -13,6 +13,7 @@ Imports:
     Biostrings,
     dplyr,
     mirbase.db,
+    msa,
     pheatmap,
     pwalign,
     Rcpp
@@ -26,5 +27,3 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://github.com/lchsz/risoma
-NeedsCompilation: no
-Repository: CRAN

@@ -1,4 +1,3 @@
-
 #' Get CIGAR string represents alignment between query and ref
 #'
 #' @param query query string
@@ -6,7 +5,7 @@
 #' @return CIGAR
 #'
 #' @export
-get_cigar <- function(query, ref) {
+calcOneCigar <- function(query, ref) {
   query <- strsplit(query, "")[[1]]
   ref <- strsplit(ref, "")[[1]]
   cigar <- rep("M", length(query))
@@ -22,11 +21,11 @@ get_cigar <- function(query, ref) {
 }
 
 
-pw_aln <- function(query, subject, sub_mat) {
+pwAln <- function(query, subject, subMat) {
   alns <- pwalign::pairwiseAlignment(
     pattern = query,
     subject = subject,
-    substitutionMatrix = sub_mat,
+    substitutionMatrix = subMat,
     gapOpening = 0,
     gapExtension = 1,
     type = "global"
@@ -39,22 +38,22 @@ pw_aln <- function(query, subject, sub_mat) {
 }
 
 
-calc_cigar <- function(isoforms) {
-  result <- NULL
+calcCigar <- function(isoforms) {
+  cigars <- NULL
   if (nrow(isoforms > 0)) {
     queries <- Biostrings::DNAStringSet(isoforms$read_seq)
     subjects <- Biostrings::DNAStringSet(isoforms$mature_seq)
 
-    query_num <- length(queries)
-    cigars <- vector("character", query_num)
+    queryNum <- length(queries)
+    cigars <- vector("character", queryNum)
 
-    sub_mat <- pwalign::nucleotideSubstitutionMatrix(match = 1, mismatch = 0)
+    subMat <- pwalign::nucleotideSubstitutionMatrix(match = 1, mismatch = 0)
 
-    for (i in seq_len(query_num)) {
+    for (i in seq_len(queryNum)) {
       query <- queries[i]
       subject <- subjects[i]
-      ss <- pw_aln(query, subject, sub_mat)
-      cigar <- get_cigar(ss[1], ss[2])
+      ss <- pwAln(query, subject, subMat)
+      cigar <- calcOneCigar(ss[1], ss[2])
       cigars[i] <- cigar
     }
   }

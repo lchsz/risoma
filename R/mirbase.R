@@ -10,41 +10,41 @@
 #' load_mirna("vvi", 13)
 #'
 #' @export
-load_mirna <- function(spe, word_size = 13) {
+loadMirna <- function(spe, wordSize = 13) {
   id2spe <- as.list(mirbase.db::mirbaseID2SPECIES)
-  pre_ids <- AnnotationDbi::mappedkeys(id2spe[id2spe == spe])
+  preIds <- AnnotationDbi::mappedkeys(id2spe[id2spe == spe])
 
-  pre_seqs <- mirbase.db::mirbaseSEQUENCE
-  id2pre_seq <- as.list(pre_seqs[pre_ids])
+  preSeqs <- mirbase.db::mirbaseSEQUENCE
+  id2preSeq <- as.list(preSeqs[preIds])
 
-  id2matrue <- AnnotationDbi::mget(pre_ids, mirbase.db::mirbaseMATURE)
+  id2matrue <- AnnotationDbi::mget(preIds, mirbase.db::mirbaseMATURE)
 
-  out <- vector("list", length(pre_ids))
+  mirnas <- vector("list", length(preIds))
 
-  for (i in seq_along(pre_ids)) {
-    pre_id <- pre_ids[[i]]
-    pre_seq <- gsub("U", "T", toupper(id2pre_seq[[pre_id]]))
-    mature <- id2matrue[[pre_id]]
-    mature_seq <- substr(pre_seq,
+  for (i in seq_along(preIds)) {
+    preId <- preIds[[i]]
+    preSeq <- gsub("U", "T", toupper(id2preSeq[[preId]]))
+    mature <- id2matrue[[preId]]
+    matureSeq <- substr(preSeq,
                          mirbase.db::matureFrom(mature),
                          mirbase.db::matureTo(mature))
 
     # should check if the length of mirna_seq is shorted than word_size?
-    seed_start <- floor((nchar(mature_seq) - word_size) / 2) + 1
-    seed_end <- seed_start + word_size - 1
-    seed_seq <- substr(mature_seq, seed_start, seed_end)
+    seedStart <- floor((nchar(matureSeq) - wordSize) / 2) + 1
+    seedEnd <- seedStart + wordSize - 1
+    seedSeq <- substr(matureSeq, seedStart, seedEnd)
 
     df <- data.frame(
-      mature_id = mirbase.db::matureName(mature),
-      mature_seq = mature_seq,
+      mature_ID = mirbase.db::matureName(mature),
+      mature_seq = matureSeq,
       mature_start = mirbase.db::matureFrom(mature),
-      seed_seq = seed_seq,
-      pre_id = pre_id,
-      pre_seq = pre_seq
+      seed_seq = seedSeq,
+      pre_ID = preId,
+      pre_seq = preSeq
     )
 
-    out[[i]] <- df
+    mirnas[[i]] <- df
   }
 
-  dplyr::bind_rows(out)
+  dplyr::bind_rows(mirnas)
 }
