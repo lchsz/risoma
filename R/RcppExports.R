@@ -6,8 +6,8 @@
 #' @param s1 first string
 #' @param s2 second string
 #' @return edit distance
-editDist <- function(s1, s2) {
-    .Call(`_risoma_editDist`, s1, s2)
+edit_dist <- function(s1, s2) {
+    .Call(`_risoma_edit_dist`, s1, s2)
 }
 
 #' Find isoform from reads based on reference miRNAs
@@ -17,13 +17,13 @@ editDist <- function(s1, s2) {
 #'   seed on miRNA (seed_seq), precursor ID (pre_ID) and precursor sequence
 #'   (pre_seq)
 #' @param reads a data.frame containing sequence and it's amount
-#' @param maxEd5p the maximum distance between 5’ region of reads with 
+#' @param maxEd5p the maximum distance between 5’ region of reads with
 #'   reference miRNA
-#' @param maxEd3p the maximum distance between 3' region of reads with 
+#' @param maxEd3p the maximum distance between 3' region of reads with
 #'   reference miRNA
 #' @return a data.frame with columns: mature_ID, read_seq, read_num and dist
-findIsoforms <- function(mirnas, reads, maxEd5p, maxEd3p) {
-    .Call(`_risoma_findIsoforms`, mirnas, reads, maxEd5p, maxEd3p)
+find_isoforms <- function(mirnas, reads, max_ed_5p, max_ed_3p) {
+    .Call(`_risoma_find_isoforms`, mirnas, reads, max_ed_5p, max_ed_3p)
 }
 
 #' Mark duplicates in the FASTQ file
@@ -34,7 +34,19 @@ findIsoforms <- function(mirnas, reads, maxEd5p, maxEd3p) {
 #' @param fqFile FASTQ file of a sample
 #' @param minReadNum the minimum read count for an isoform
 #' @return a data.frame with column 'read_seq' and 'read_num'
-markDuplicates <- function(fqFile, minReadNum) {
-    .Call(`_risoma_markDuplicates`, fqFile, minReadNum)
+mark_duplicates <- function(fq_file, min_read_num) {
+    .Call(`_risoma_mark_duplicates`, fq_file, min_read_num)
+}
+
+#' Mark duplicates in the FASTQ file
+#'
+#' To speed up the computation, we first extract sequences of each read and
+#' then mark and count duplicates.
+#'
+#' @param fqFile FASTQ file of a sample
+#' @param minReadNum the minimum read count for an isoform
+#' @return a data.frame with column 'read_seq' and 'read_num'
+mark_duplicates_gz <- function(fq_file, min_read_num) {
+    .Call(`_risoma_mark_duplicates_gz`, fq_file, min_read_num)
 }
 

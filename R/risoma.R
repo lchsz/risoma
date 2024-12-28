@@ -1,209 +1,201 @@
 #' ============================== exported functions =============================
 
+
 #' Find isoform from a sample
 #'
-#' @param fqFile FASTQ of a samle
+#' @param fq_file FASTQ of a samle
 #' @param mirnas A data.frame storing mature miRNA ID (matrue_id),
 #'   mature miRNA sequence (mature_seq), mature start (mature_start),
 #'   seed on miRNA (seed_seq), precursor ID (pre_id) and precursor sequence
 #'   (pre_seq)
-#' @param maxEd5p the maximum distance between 5’ region of reads with reference miRNA
-#' @param maxEd3p the maximum distance between 3' region of reads with reference miRNA
+#' @param max_ed_5p the maximum distance between 5’ region of reads with
+#'   reference miRNA
+#' @param max_ed_3p the maximum distance between 3' region of reads with
+#'   reference miRNA
 #' @return a data.frame with columns: mature_id, read_seq, read_num and dist
 #'
 #' @export
-detectOneSample <- function(fqFile, mirnas, maxEd5p, maxEd3p) {
-  reads <- markDuplicates(fqFile, 1)
-  isoforms <- findIsoforms(mirnas, reads, maxEd5p, maxEd3p)
+detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
+  reads <- NULL
+  if (endsWith(fq_file, ".gz")) {
+    reads <- mark_duplicates_gz(fq_file, 1)
+  } else {
+    reads <- mark_duplicates(fq_file, 1)
+  }
+
+  isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p)
   return(isoforms)
 }
+
 
 #' Detect isoform based on the sample information file containing sample name,
 #' tissue/treatment and FASTQ path
 #'
-#' @param sampleInfoFile description
-#' @param spe description
-#' @param wordSize description
-#' @param maxEd5p description
-#' @param maxEd3p description
-#' @param minTpm description
+#' @param sample_info_file description
+#' @param fq_dir description
+#' @param mirnas description
+#' @param max_ed_5p description
+#' @param max_ed_3p description
+#' @param min_tpm description
 #' @return IsomirDataSet
 #'
 #' @export
-detectIsomirs <- function(sampleInfoFile,
-                          spe,
-                          wordSize = 13,
-                          maxEd5p = 2,
-                          maxEd3p = 3,
-                          minTpm = 2) {
-  mirnas <- loadMirna(spe, wordSize)
-  metaData <- read.csv(sampleInfoFile,
+detect_isomirs <- function(sample_info_file,
+                          fq_dir,
+                          mirnas,
+                          max_ed_5p = 2,
+                          max_ed_3p = 3,
+                          min_tpm = 2) {
+
+  meta_data <- read.csv(sample_info_file,
                        stringsAsFactors = FALSE,
                        comment.char = "#")
 
-  dupName <- metaData$name[duplicated(metaData$name)]
-  if (length(dupName) != 0) {
-    stop("Duplicated sample name: ", paste(dupName, collapse = ", "))
+  dup_name <- meta_data$name[duplicated(meta_data$name)]
+  if (length(dup_name) != 0) {
+    stop("Duplicated sample name: ", paste(dup_name, collapse = ", "))
   }
 
-  dupFq <- metaData$fq[duplicated(metaData$fq)]
-  if (length(dupFq) != 0) {
-    stop("Duplicated FASTQ files:", paste(dupFq, collapse = ", "))
+  meta_data$fq <- file.path(fq_dir, meta_data$fq)
+
+  dup_fq <- meta_data$fq[duplicated(meta_data$fq)]
+  if (length(dup_fq) != 0) {
+    stop("Duplicated FASTQ files:", paste(dup_fq, collapse = ", "))
   }
 
-  noFq <- metaData$fq[!file.exists(metaData$fq)]
-  if (length(noFq) != 0) {
-    stop("FASTQ files do not exists: ", paste(noFq, collapse = ", "))
+  no_fq <- meta_data$fq[!file.exists(meta_data$fq)]
+  if (length(no_fq) != 0) {
+    stop("FASTQ files do not exists: ", paste(no_fq, collapse = ", "))
   }
 
-  row.names(metaData) <- metaData$name
-  group <- split(metaData, metaData$group)
+  rownames(meta_data) <- meta_data$name
+  group <- split(meta_data, meta_data$group)
 
-  repNum <- sapply(group, function(x)
+  rep_num <- sapply(group, function(x)
     nrow(x))
-  repOne <- repNum[repNum < 2]
-  if (length(repOne) != 0) {
+
+  rep_one <- rep_num[rep_num < 2]
+  if (length(rep_one) != 0) {
     stop(
       "At least two replicates are required for tissu/treatment: ",
-      paste(names(repOne), collapse = ", ")
+      paste(names(rep_one), collapse = ", ")
     )
   }
 
-  isoformList <- lapply(
+  isoform_list <- lapply(
     group,
-    detectOneTissue,
+    detect_one_tissue,
     mirnas = mirnas,
-    maxEd5p = maxEd5p,
-    maxEd3p = maxEd3p,
-    minTpm = minTpm
+    max_ed_5p = max_ed_5p,
+    max_ed_3p = max_ed_3p,
+    min_tpm = min_tpm
   )
 
+  isoform_list <- isoform_list[sapply(isoform_list, function(x) nrow(x) != 0)]
+
   message("Generating expression profiile from isomiR list")
-  expr <- generateExpr(isoformList)
+  expr <- generate_expr(isoform_list)
 
   message("Clustriing isoforms based on reference mature microRNAs")
-  isomirList <- clusterIsoforms(isoformList)
+  isomir_list <- cluster_isoforms(isoform_list)
 
   new(
     "IsomirDataSet",
-    isoformList = isoformList,
+    isoform_list = isoform_list,
     expr = expr,
-    isomirList = isomirList
+    isomir_list = isomir_list
   )
 }
 
+
 #' ====================== private functions ====================================
+
 
 #' Detect isoforms from a tissue consist of several duplicates
 #'
-#' @param sampleInfo A data.frame with sample name, fq and group information
+#' @param sample_info A data.frame with sample name, fq and group information
 #'   for replicates in a tissu/treatment
 #' @param mirnas A data.frame storing mature miRNA ID, mature miRNA sequence,
 #'   mature start, seed on miRNA, precursor ID and precursor sequence
-#' @param maxEd5p the maximum distance between 5’ region of reads with
+#' @param max_ed_5p the maximum distance between 5’ region of reads with
 #'   reference miRNA
-#' @param maxEd3p the maximum distance between 3' region of reads with
+#' @param max_ed_3p the maximum distance between 3' region of reads with
 #'   reference miRNA
-#' @param minTpm a isomiR is defined as “expressed” only when the TPM of all
+#' @param min_tpm a isomiR is defined as “expressed” only when the TPM of all
 #'    biological replicates were greater than or equal to the threshold set
 #' @return a data.frame
-#'
-detectOneTissue <- function(sampleInfo,
+detect_one_tissue <- function(sample_info,
                             mirnas,
-                            maxEd5p,
-                            maxEd3p,
-                            minTpm) {
-  tissueIsoforms <- apply(sampleInfo, 1, function(x) {
-    sampleName <- x["name"]
-    fqFile <- x["fq"]
-    message("detecting isoform for sample: ", sampleName)
-    isoforms <- detectOneSample(fqFile, mirnas, maxEd5p, maxEd3p)
-    isoforms$TPM <- calcTpm(isoforms)
-    isoforms <- subset(isoforms, TPM >= minTpm)
-    cigars <- calcCigar(isoforms)
-    isoforms$CIGAR <- cigars
-    isoforms$ID <- paste0(isoforms$mature_ID, "-", cigars)
+                            max_ed_5p,
+                            max_ed_3p,
+                            min_tpm) {
+  tissue_isoforms <- apply(sample_info, 1, function(x) {
+    sample_name <- x["name"]
+    fq_file <- x["fq"]
+    message("detecting isoform for sample: ", sample_name)
+    isoforms <- detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p)
+    isoforms$tpm <- calc_tpm(isoforms)
+    isoforms <- subset(isoforms, tpm >= min_tpm)
+    isoforms$cigar <- calc_cigar(isoforms)
     isoforms
   })
 
-  # read_seqs <- tissue_isoforms[[1]]$read_seq
-  # for (i in seq_along(tissue_isoforms)[-1]) {
-  #   read_seqs <- intersect(read_seqs, tissue_isoforms[[i]]$read_seq)
-  # }
-  #
-  # lapply(tissue_isoforms, function(isoforms) {
-  #   isoforms <- subset(isoforms, read_seq %in% read_seqs)
-  #   cigars <- calc_cigar(isoforms)
-  #   isoforms$id <- paste0(isoforms$mature_id, "-", cigars)
-  #   isoforms
-  # })
-
-  isoforms <- tissueIsoforms[[1]]
-  for (i in seq_along(tissueIsoforms)[-1]) {
-    isoformsTemp <- tissueIsoforms[[i]][, c("read_seq", "TPM")]
-    isoforms <- merge(x = isoforms, y = isoformsTemp, by = "read_seq")
-    isoforms$TPM <- rowMeans(isoforms[, c("TPM.x", "TPM.y")])
-    isoforms$TPM.x <- NULL
-    isoforms$TPM.y <- NULL
+  isoforms <- tissue_isoforms[[1]]
+  for (i in seq_along(tissue_isoforms)[-1]) {
+    isoforms_temp <- tissue_isoforms[[i]][, c("read_seq", "tpm")]
+    isoforms <- merge(x = isoforms, y = isoforms_temp, by = "read_seq")
+    isoforms$tpm <- rowMeans(isoforms[, c("tpm.x", "tpm.y")])
+    isoforms$tpm.x <- NULL
+    isoforms$tpm.y <- NULL
   }
 
-  return(isoforms)
+  isoforms
 }
 
-clusterIsoforms <- function(isoformList) {
-  dfList <- lapply(isoformList, function(x) {
-    x[, c("ID", "mature_ID", "read_seq", "dist", "CIGAR")]
+
+cluster_isoforms <- function(isoform_list) {
+  df_list <- lapply(isoform_list, function(x) {
+    x[, c("mature_id", "mature_seq", "read_seq", "dist", "cigar")]
   })
 
-  df <- dplyr::bind_rows(dfList)
+  df <- dplyr::bind_rows(df_list)
   df <- dplyr::distinct(df)
 
-  group <- split(df, df$mature_ID)
-  lapply(group, function(x) {
+  group <- split(df, df$mature_id)
+  isomir_list <- lapply(group, function(x) {
     x <- dplyr::arrange(x, desc(dist))
     new(
       "Isomir",
-      matureId = x$mature_ID[1],
-      readSeqs = x$read_seq,
-      isoformIds = x$ID,
+      mature_id = x$mature_id[1],
+      mature_seq = x$mature_seq[1],
+      read_seqs = x$read_seq,
       dist = x$dist,
-      cigars = x$CIGAR
+      cigars = x$cigar
     )
   })
+
+  isomir_list[sapply(isomir_list, function(x) has_ref(x))]
 }
 
-#' Extract isomiRs from a list containing all isoforms
-#'
-#' @param isoformList a list containing all isoforms
-#' @return a list of all isomiRs
-generateIsomirs <- function(isoformList) {
-  lapply(isoformList, function(isoforms) {
-    group <- dplyr::group_by(isoforms, read_seq)
-    group <- dplyr::mutate(group, IDs = paste(make.unique(sort(ID)), collapse = ","))
-    # group <- dplyr::mutate(group, ID = sort(IDs)[1])
-    group <- dplyr::distinct(group, read_seq, .keep_all = TRUE)
-    as.data.frame(dplyr::ungroup(group))
-  })
-}
 
 #' Extract expression profile of each sample replicate from isomiRs
 #'
-#' @param isomirList isomiRs of all samples
+#' @param isomir_list isomiRs of all samples
 #' @return a data.frame of expression
-generateExpr <- function(isoformList) {
-  tissueName <- names(isoformList[1])
-  expr <- isoformList[[1]][, c("read_seq", "TPM")]
+generate_expr <- function(isoform_list) {
+  tissue_name <- names(isoform_list[1])
+  expr <- isoform_list[[1]][, c("read_seq", "tpm")]
   expr <- dplyr::distinct(expr, read_seq, .keep_all = TRUE)
-  colnames(expr)[colnames(expr) == "TPM"] <- tissueName
-  for (i in seq_along(isoformList)[-1]) {
-    tissueName <- names(isoformList[i])
-    exprTemp <- isoformList[[i]][, c("read_seq", "TPM")]
-    exprTemp <- dplyr::distinct(exprTemp, read_seq, .keep_all = TRUE)
-    colnames(exprTemp)[colnames(exprTemp) == "TPM"] <- tissueName
-    expr <- merge(x = expr, y = exprTemp, by = "read_seq", all = TRUE)
+  colnames(expr)[colnames(expr) == "tpm"] <- tissue_name
+  for (i in seq_along(isoform_list)[-1]) {
+    tissue_name <- names(isoform_list[i])
+    expr_temp <- isoform_list[[i]][, c("read_seq", "tpm")]
+    expr_temp <- dplyr::distinct(expr_temp, read_seq, .keep_all = TRUE)
+    colnames(expr_temp)[colnames(expr_temp) == "tpm"] <- tissue_name
+    expr <- merge(x = expr, y = expr_temp, by = "read_seq", all = TRUE)
   }
 
-  row.names(expr) <- expr$read_seq
+  rownames(expr) <- expr$read_seq
   expr$read_seq <- NULL
   expr[is.na(expr)] = 0
 

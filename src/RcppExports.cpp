@@ -10,49 +10,62 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// editDist
-int editDist(const std::string& s1, const std::string& s2);
-RcppExport SEXP _risoma_editDist(SEXP s1SEXP, SEXP s2SEXP) {
+// edit_dist
+int edit_dist(const std::string& s1, const std::string& s2);
+RcppExport SEXP _risoma_edit_dist(SEXP s1SEXP, SEXP s2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type s1(s1SEXP);
     Rcpp::traits::input_parameter< const std::string& >::type s2(s2SEXP);
-    rcpp_result_gen = Rcpp::wrap(editDist(s1, s2));
+    rcpp_result_gen = Rcpp::wrap(edit_dist(s1, s2));
     return rcpp_result_gen;
 END_RCPP
 }
-// findIsoforms
-DataFrame findIsoforms(DataFrame mirnas, DataFrame reads, int maxEd5p, int maxEd3p);
-RcppExport SEXP _risoma_findIsoforms(SEXP mirnasSEXP, SEXP readsSEXP, SEXP maxEd5pSEXP, SEXP maxEd3pSEXP) {
+// find_isoforms
+DataFrame find_isoforms(DataFrame mirnas, DataFrame reads, int max_ed_5p, int max_ed_3p);
+RcppExport SEXP _risoma_find_isoforms(SEXP mirnasSEXP, SEXP readsSEXP, SEXP max_ed_5pSEXP, SEXP max_ed_3pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< DataFrame >::type mirnas(mirnasSEXP);
     Rcpp::traits::input_parameter< DataFrame >::type reads(readsSEXP);
-    Rcpp::traits::input_parameter< int >::type maxEd5p(maxEd5pSEXP);
-    Rcpp::traits::input_parameter< int >::type maxEd3p(maxEd3pSEXP);
-    rcpp_result_gen = Rcpp::wrap(findIsoforms(mirnas, reads, maxEd5p, maxEd3p));
+    Rcpp::traits::input_parameter< int >::type max_ed_5p(max_ed_5pSEXP);
+    Rcpp::traits::input_parameter< int >::type max_ed_3p(max_ed_3pSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p));
     return rcpp_result_gen;
 END_RCPP
 }
-// markDuplicates
-DataFrame markDuplicates(std::string fqFile, int minReadNum);
-RcppExport SEXP _risoma_markDuplicates(SEXP fqFileSEXP, SEXP minReadNumSEXP) {
+// mark_duplicates
+DataFrame mark_duplicates(std::string fq_file, int min_read_num);
+RcppExport SEXP _risoma_mark_duplicates(SEXP fq_fileSEXP, SEXP min_read_numSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::string >::type fqFile(fqFileSEXP);
-    Rcpp::traits::input_parameter< int >::type minReadNum(minReadNumSEXP);
-    rcpp_result_gen = Rcpp::wrap(markDuplicates(fqFile, minReadNum));
+    Rcpp::traits::input_parameter< std::string >::type fq_file(fq_fileSEXP);
+    Rcpp::traits::input_parameter< int >::type min_read_num(min_read_numSEXP);
+    rcpp_result_gen = Rcpp::wrap(mark_duplicates(fq_file, min_read_num));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mark_duplicates_gz
+DataFrame mark_duplicates_gz(std::string fq_file, int min_read_num);
+RcppExport SEXP _risoma_mark_duplicates_gz(SEXP fq_fileSEXP, SEXP min_read_numSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type fq_file(fq_fileSEXP);
+    Rcpp::traits::input_parameter< int >::type min_read_num(min_read_numSEXP);
+    rcpp_result_gen = Rcpp::wrap(mark_duplicates_gz(fq_file, min_read_num));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_risoma_editDist", (DL_FUNC) &_risoma_editDist, 2},
-    {"_risoma_findIsoforms", (DL_FUNC) &_risoma_findIsoforms, 4},
-    {"_risoma_markDuplicates", (DL_FUNC) &_risoma_markDuplicates, 2},
+    {"_risoma_edit_dist", (DL_FUNC) &_risoma_edit_dist, 2},
+    {"_risoma_find_isoforms", (DL_FUNC) &_risoma_find_isoforms, 4},
+    {"_risoma_mark_duplicates", (DL_FUNC) &_risoma_mark_duplicates, 2},
+    {"_risoma_mark_duplicates_gz", (DL_FUNC) &_risoma_mark_duplicates_gz, 2},
     {NULL, NULL, 0}
 };
 

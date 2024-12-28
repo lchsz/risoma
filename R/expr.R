@@ -6,7 +6,7 @@
 #' \deqn{
 #'  TPM = \frac{q_i/l_i}{\sum q_j/l_j} 10^6
 #' }
-calcTpm <- function(isoforms) {
+calc_tpm <- function(isoforms) {
   expr <- dplyr::distinct(isoforms, read_seq, .keep_all=TRUE)
   total <- sum(expr$read_num / nchar(expr$read_seq))
   tpm <- isoforms$read_num / nchar(isoforms$read_seq) / total * 1e6
@@ -24,9 +24,9 @@ calcTpm <- function(isoforms) {
 #'
 #' @param exp Expression profile of a gene
 #' @return tau
-calcOneTsi <- function(exp){
-  maxExp <- max(exp)
-  tsi <- sum(1 - exp/maxExp) / (length(exp) - 1)
+calc_one_tsi <- function(exp){
+  max_exp <- max(exp)
+  tsi <- sum(1 - exp/max_exp) / (length(exp) - 1)
   return(tsi)
 }
 
@@ -43,7 +43,7 @@ calcOneTsi <- function(exp){
 #' @return tau
 #'
 #' @export
-calcTsi <- function(expr) {
-  tau <- round(apply(expr, 1, calcOneTsi), 2)
-  data.frame(read_seq = row.names(expr), TSI = tau)
+calc_tsi <- function(expr) {
+  tau <- round(apply(expr, 1, calc_one_tsi), 2)
+  data.frame(read_seq = rownames(expr), tsi = tau)
 }

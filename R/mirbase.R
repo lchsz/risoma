@@ -10,37 +10,37 @@
 #' load_mirna("vvi", 13)
 #'
 #' @export
-loadMirna <- function(spe, wordSize = 13) {
+load_mirnas <- function(spe, word_size = 13) {
   id2spe <- as.list(mirbase.db::mirbaseID2SPECIES)
-  preIds <- AnnotationDbi::mappedkeys(id2spe[id2spe == spe])
+  pre_ids <- AnnotationDbi::mappedkeys(id2spe[id2spe == spe])
 
-  preSeqs <- mirbase.db::mirbaseSEQUENCE
-  id2preSeq <- as.list(preSeqs[preIds])
+  pre_seqs <- mirbase.db::mirbaseSEQUENCE
+  id2pre_seq <- as.list(pre_seqs[pre_ids])
 
-  id2matrue <- AnnotationDbi::mget(preIds, mirbase.db::mirbaseMATURE)
+  id2matrue <- AnnotationDbi::mget(pre_ids, mirbase.db::mirbaseMATURE)
 
-  mirnas <- vector("list", length(preIds))
+  mirnas <- vector("list", length(pre_ids))
 
-  for (i in seq_along(preIds)) {
-    preId <- preIds[[i]]
-    preSeq <- gsub("U", "T", toupper(id2preSeq[[preId]]))
-    mature <- id2matrue[[preId]]
-    matureSeq <- substr(preSeq,
+  for (i in seq_along(pre_ids)) {
+    pre_id <- pre_ids[[i]]
+    pre_seq <- gsub("U", "T", toupper(id2pre_seq[[pre_id]]))
+    mature <- id2matrue[[pre_id]]
+    mature_seq <- substr(pre_seq,
                          mirbase.db::matureFrom(mature),
                          mirbase.db::matureTo(mature))
 
     # should check if the length of mirna_seq is shorted than word_size?
-    seedStart <- floor((nchar(matureSeq) - wordSize) / 2) + 1
-    seedEnd <- seedStart + wordSize - 1
-    seedSeq <- substr(matureSeq, seedStart, seedEnd)
+    seed_start <- floor((nchar(mature_seq) - word_size) / 2) + 1
+    seed_end <- seed_start + word_size - 1
+    seed_seq <- substr(mature_seq, seed_start, seed_end)
 
     df <- data.frame(
-      mature_ID = mirbase.db::matureName(mature),
-      mature_seq = matureSeq,
+      mature_id = mirbase.db::matureName(mature),
+      mature_seq = mature_seq,
       mature_start = mirbase.db::matureFrom(mature),
-      seed_seq = seedSeq,
-      pre_ID = preId,
-      pre_seq = preSeq
+      seed_seq = seed_seq,
+      pre_id = pre_id,
+      pre_seq = pre_seq
     )
 
     mirnas[[i]] <- df
