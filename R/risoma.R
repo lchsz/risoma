@@ -16,12 +16,11 @@
 #'
 #' @export
 detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
-  reads <- NULL
-  if (endsWith(fq_file, ".gz")) {
-    reads <- mark_duplicates_gz(fq_file, 1)
-  } else {
-    reads <- mark_duplicates(fq_file, 1)
-  }
+  reads <- ifelse(
+    endsWith(fq_file, ".gz"),
+    mark_duplicates_gz(fq_file, 1),
+    mark_duplicates(fq_file, 1)
+  )
 
   isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p)
   return(isoforms)
@@ -129,10 +128,10 @@ detect_one_tissue <- function(sample_info,
                             max_ed_5p,
                             max_ed_3p,
                             min_tpm) {
+  message("Detecting isoforms for tissue: ", sample_info["group"][[1]])
   tissue_isoforms <- apply(sample_info, 1, function(x) {
     sample_name <- x["name"]
     fq_file <- x["fq"]
-    message("detecting isoform for sample: ", sample_name)
     isoforms <- detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p)
     isoforms$tpm <- calc_tpm(isoforms)
     isoforms <- subset(isoforms, tpm >= min_tpm)
