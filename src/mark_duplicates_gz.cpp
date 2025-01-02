@@ -7,6 +7,7 @@
 using namespace Rcpp;
 using namespace std;
 
+
 //' Mark duplicates in the FASTQ file
 //'
 //' To speed up the computation, we first extract sequences of each read and

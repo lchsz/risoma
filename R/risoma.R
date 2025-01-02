@@ -15,14 +15,17 @@
 #' @return a data.frame with columns: mature_id, read_seq, read_num and dist
 #'
 #' @export
-detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
-  reads <- ifelse(
-    endsWith(fq_file, ".gz"),
-    mark_duplicates_gz(fq_file, 1),
-    mark_duplicates(fq_file, 1)
-  )
+detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p, type) {
+  if (max_ed_5p <= 0) stop("max_ed_5p should > 0")
+  if( max_ed_3p <= 0) stop("max_ed_3p should > 0")
+  reads  <- NULL
+  if(endsWith(fq_file, ".gz")) {
+    reads  <- mark_duplicates_gz(fq_file, 1)
+  } else {
+    reads  <-mark_duplicates(fq_file, 1)
+  }
 
-  isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p)
+  isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p, type)
   return(isoforms)
 }
 
@@ -44,7 +47,10 @@ detect_isomirs <- function(sample_info_file,
                           mirnas,
                           max_ed_5p = 2,
                           max_ed_3p = 3,
-                          min_tpm = 2) {
+                          min_tpm = 2,
+                          type = "all") {
+
+  isoform_type <- match.arg(type, choices = c("all", "p5", "p3"))
 
   meta_data <- read.csv(sample_info_file,
                        stringsAsFactors = FALSE,
@@ -81,13 +87,15 @@ detect_isomirs <- function(sample_info_file,
     )
   }
 
+  message("Detecting isoforms")
   isoform_list <- lapply(
     group,
     detect_one_tissue,
     mirnas = mirnas,
     max_ed_5p = max_ed_5p,
     max_ed_3p = max_ed_3p,
-    min_tpm = min_tpm
+    min_tpm = min_tpm,
+    type = isoform_type
   )
 
   isoform_list <- isoform_list[sapply(isoform_list, function(x) nrow(x) != 0)]
@@ -127,12 +135,13 @@ detect_one_tissue <- function(sample_info,
                             mirnas,
                             max_ed_5p,
                             max_ed_3p,
-                            min_tpm) {
-  message("Detecting isoforms for tissue: ", sample_info["group"][[1]])
+                            min_tpm,
+                            type) {
+  # message("Detecting isoforms for tissue: ", sample_info["group"][[1]])
   tissue_isoforms <- apply(sample_info, 1, function(x) {
     sample_name <- x["name"]
     fq_file <- x["fq"]
-    isoforms <- detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p)
+    isoforms <- detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p, type)
     isoforms$tpm <- calc_tpm(isoforms)
     isoforms <- subset(isoforms, tpm >= min_tpm)
     isoforms$cigar <- calc_cigar(isoforms)
@@ -154,7 +163,7 @@ detect_one_tissue <- function(sample_info,
 
 cluster_isoforms <- function(isoform_list) {
   df_list <- lapply(isoform_list, function(x) {
-    x[, c("mature_id", "mature_seq", "read_seq", "dist", "cigar")]
+    x[, c("mature_id", "mature_seq", "template_seq", "read_seq", "dist", "cigar")]
   })
 
   df <- dplyr::bind_rows(df_list)
@@ -163,10 +172,12 @@ cluster_isoforms <- function(isoform_list) {
   group <- split(df, df$mature_id)
   isomir_list <- lapply(group, function(x) {
     x <- dplyr::arrange(x, desc(dist))
+    x$cigar[x$dist == 0] <- x$mature_id[[1]]
     new(
       "Isomir",
-      mature_id = x$mature_id[1],
-      mature_seq = x$mature_seq[1],
+      mature_id = x$mature_id[[1]],
+      mature_seq = x$mature_seq[[1]],
+      template_seq = x$template_seq[[1]],
       read_seqs = x$read_seq,
       dist = x$dist,
       cigars = x$cigar

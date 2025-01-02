@@ -4,12 +4,12 @@
 \alias{load_mirnas}
 \title{Load miRNAs of a species from mirbase.db}
 \usage{
-load_mirnas(spe, word_size = 13)
+load_mirnas(spe, seed_size = 13)
 }
 \arguments{
 \item{spe}{species}
 
-\item{word_size}{Length of seed in mature miRNA}
+\item{seed_size}{Length of seed in mature miRNA}
 }
 \value{
 A data.frame storing mature miRNA ID (matrue_id),

@@ -10,21 +10,21 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// edit_dist
-int edit_dist(const std::string& s1, const std::string& s2);
-RcppExport SEXP _risoma_edit_dist(SEXP s1SEXP, SEXP s2SEXP) {
+// calc_edit_dist
+int calc_edit_dist(const std::string& s1, const std::string& s2);
+RcppExport SEXP _risoma_calc_edit_dist(SEXP s1SEXP, SEXP s2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type s1(s1SEXP);
     Rcpp::traits::input_parameter< const std::string& >::type s2(s2SEXP);
-    rcpp_result_gen = Rcpp::wrap(edit_dist(s1, s2));
+    rcpp_result_gen = Rcpp::wrap(calc_edit_dist(s1, s2));
     return rcpp_result_gen;
 END_RCPP
 }
 // find_isoforms
-DataFrame find_isoforms(DataFrame mirnas, DataFrame reads, int max_ed_5p, int max_ed_3p);
-RcppExport SEXP _risoma_find_isoforms(SEXP mirnasSEXP, SEXP readsSEXP, SEXP max_ed_5pSEXP, SEXP max_ed_3pSEXP) {
+DataFrame find_isoforms(DataFrame mirnas, DataFrame reads, int max_ed_5p, int max_ed_3p, std::string type);
+RcppExport SEXP _risoma_find_isoforms(SEXP mirnasSEXP, SEXP readsSEXP, SEXP max_ed_5pSEXP, SEXP max_ed_3pSEXP, SEXP typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -32,7 +32,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< DataFrame >::type reads(readsSEXP);
     Rcpp::traits::input_parameter< int >::type max_ed_5p(max_ed_5pSEXP);
     Rcpp::traits::input_parameter< int >::type max_ed_3p(max_ed_3pSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p));
+    Rcpp::traits::input_parameter< std::string >::type type(typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p, type));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -62,8 +63,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_risoma_edit_dist", (DL_FUNC) &_risoma_edit_dist, 2},
-    {"_risoma_find_isoforms", (DL_FUNC) &_risoma_find_isoforms, 4},
+    {"_risoma_calc_edit_dist", (DL_FUNC) &_risoma_calc_edit_dist, 2},
+    {"_risoma_find_isoforms", (DL_FUNC) &_risoma_find_isoforms, 5},
     {"_risoma_mark_duplicates", (DL_FUNC) &_risoma_mark_duplicates, 2},
     {"_risoma_mark_duplicates_gz", (DL_FUNC) &_risoma_mark_duplicates_gz, 2},
     {NULL, NULL, 0}

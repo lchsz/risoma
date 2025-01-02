@@ -37,6 +37,9 @@ setMethod("aln_isoforms", "IsomirDataSet", function(x, ref) {
   isomir <- ex_isomir(x, ref)
   seqs <- isomir@read_seqs
   names(seqs) <- make.unique(isomir@cigars)
+  template_seq <- isomir@template_seq
+  names(template_seq) <- "template"
+  seqs <- c(seqs, template_seq)
   seqs <- Biostrings::DNAStringSet(seqs, use.names = TRUE)
   seq_aln <- msa::msa(seqs, order = "input")
   Biostrings::DNAStringSet(seq_aln)

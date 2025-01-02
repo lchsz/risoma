@@ -69,6 +69,9 @@ The Isomir S4 class contains the mature miRNA ID, mature miRNA sequence, edit di
 ## The IsomirDataSet data class
 
 Risoma stores results of isomiRs called a IsomirDataSet.
+The main components of an IsomirDataSet object are a list containing the isoforms, 
+a data.frame containing expression profiles, and a list of isomir object.
+
 
 ## Naming and labeling isomiRs
 
@@ -105,6 +108,7 @@ Technical or biological replicates can be used for assessing technical variation
 
 ```{r}
 mirnas <- load_mirnas("vvi", 13)
+mirnas
 ```
 
 Extract plant known microRNA information from the miRBase database based on species names and store it in a data frame. 
@@ -136,8 +140,12 @@ Aggregate isofoms of samples (replicates) into it's tissue (group).
 ### Clustriing isoforms based on reference miRNAs
 
 
-```{r echo=FALSE}
-isomirs <- detect_isomirs(sample_info_file, fq_dir, mirnas)
+If the sample infomation file and path of coressponding FASTQ and reference 
+micorRNA information are already available, then a IsomirDataSet object can be made by:
+
+
+```{r}
+isomirs <- detect_isomirs(sample_info_file, fq_dir, mirnas, type = "p5")
 ```
 
 # Functions to inquiry and view results
@@ -154,17 +162,17 @@ get_tissues(isomirs)
 ```
 
 ```{r}
-ex_isomir(isomirs, "vvi-miR172c")
+ex_isomir(isomirs, "vvi-miR390")
 ```
 
 ```{r}
-expr <- ex_expr(isomirs, "vvi-miR172c")
+expr <- ex_expr(isomirs, "vvi-miR390")
 
-pheatmap::pheatmap(expr, scale = "row", fontsize_row = 8)
+pheatmap::pheatmap(expr, scale = "row", fontsize_row = 4)
 ```
 
 ```{r}
-aln <- aln_isoforms(isomirs, "vvi-miR172c")
+aln <- aln_isoforms(isomirs, "vvi-miR390")
 aln
 ```
 

@@ -38,7 +38,7 @@ pw_aln <- function(query, subject, sub_mat) {
 }
 
 
-calc_cigar <- function(isoforms) {
+calc_cigar <- function(isoforms, mirnas) {
   cigars <- NULL
   if (nrow(isoforms > 0)) {
     queries <- Biostrings::DNAStringSet(isoforms$read_seq)

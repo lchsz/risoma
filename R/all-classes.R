@@ -29,6 +29,7 @@ setClass(
   slots = c(
     mature_id = "character",
     mature_seq = "character",
+    template_seq = "character",
     read_seqs = "character",
     dist = "integer",
     cigars = "character"

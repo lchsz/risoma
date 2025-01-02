@@ -11,7 +11,8 @@ detect_isomirs(
   mirnas,
   max_ed_5p = 2,
   max_ed_3p = 3,
-  min_tpm = 2
+  min_tpm = 2,
+  type = "all"
 )
 }
 \arguments{

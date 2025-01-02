@@ -5,7 +5,7 @@
 \title{====================== private functions ====================================
 Detect isoforms from a tissue consist of several duplicates}
 \usage{
-detect_one_tissue(sample_info, mirnas, max_ed_5p, max_ed_3p, min_tpm)
+detect_one_tissue(sample_info, mirnas, max_ed_5p, max_ed_3p, min_tpm, type)
 }
 \arguments{
 \item{sample_info}{A data.frame with sample name, fq and group information
