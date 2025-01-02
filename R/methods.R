@@ -59,3 +59,15 @@ setMethod("ex_ref_expr", "IsomirDataSet", function(x) {
 
   return(expr)
 })
+
+
+setMethod("calc_tsi", "IsomirDataSet", function(x) {
+  mature_seqs <- sapply(x@isomir_list, function(isomir) isomir@mature_seq)
+  expr <- x@expr
+  type <- rep("isoform", nrow(expr))
+  type[rownames(expr) %in% mature_seqs] <- "ref"
+  tau <- round(apply(expr, 1, calc_one_tsi), 2)
+  names(tau) <- NULL
+  data.frame(read_seq = rownames(expr), type = type, tsi = tau)
+})
+

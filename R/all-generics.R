@@ -35,3 +35,9 @@ setGeneric("get_tissues", function(x, ref)
 #' @export
 setGeneric("ex_ref_expr", function(x)
   standardGeneric("ex_ref_expr"))
+
+
+#' @export
+setGeneric("calc_tsi", function(x)
+  standardGeneric("calc_tsi"))
+

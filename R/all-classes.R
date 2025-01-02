@@ -32,6 +32,8 @@ setClass(
     template_seq = "character",
     read_seqs = "character",
     dist = "integer",
+    dist_5p = "integer",
+    dist_3p = "integer",
     cigars = "character"
   )
 )

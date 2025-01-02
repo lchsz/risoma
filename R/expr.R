@@ -29,21 +29,3 @@ calc_one_tsi <- function(exp){
   tsi <- sum(1 - exp/max_exp) / (length(exp) - 1)
   return(tsi)
 }
-
-
-#' Calculate tissue specificity index.
-#'
-#' \code{get_tsi} returns the tau value of a gene expression profile
-#'   across tissues. The index \eqn{\tau} is defined as:
-#'   \deqn{
-#'    \tau=\frac{\sum_{i}^N (1-x_i)}/N-1
-#'   }
-#'
-#' @param exp Expression profile of a gene
-#' @return tau
-#'
-#' @export
-calc_tsi <- function(expr) {
-  tau <- round(apply(expr, 1, calc_one_tsi), 2)
-  data.frame(read_seq = rownames(expr), tsi = tau)
-}

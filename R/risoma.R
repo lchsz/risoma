@@ -61,7 +61,7 @@ detect_isomirs <- function(sample_info_file,
     stop("Duplicated sample name: ", paste(dup_name, collapse = ", "))
   }
 
-  meta_data$fq <- file.path(fq_dir, meta_data$fq)
+  meta_data$fq <- file.path(normalizePath(fq_dir), meta_data$fq)
 
   dup_fq <- meta_data$fq[duplicated(meta_data$fq)]
   if (length(dup_fq) != 0) {
@@ -163,7 +163,8 @@ detect_one_tissue <- function(sample_info,
 
 cluster_isoforms <- function(isoform_list) {
   df_list <- lapply(isoform_list, function(x) {
-    x[, c("mature_id", "mature_seq", "template_seq", "read_seq", "dist", "cigar")]
+    x[, c("mature_id", "mature_seq", "template_seq", "read_seq", "dist",
+          "dist_5p", "dist_3p", "cigar")]
   })
 
   df <- dplyr::bind_rows(df_list)
@@ -180,6 +181,8 @@ cluster_isoforms <- function(isoform_list) {
       template_seq = x$template_seq[[1]],
       read_seqs = x$read_seq,
       dist = x$dist,
+      dist_5p = x$dist_5p,
+      dist_3p = x$dist_3p,
       cigars = x$cigar
     )
   })

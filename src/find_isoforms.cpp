@@ -11,12 +11,15 @@ struct Isoform
   string read_seq;
   int read_num;
   int dist;
+  int dist_5p;
+  int dist_3p;
 
   Isoform(const string &mature_id, const string &mature_seq,
           const string &template_seq, const string &read_seq, int read_num,
-          int dist)
+          int dist, int dist_5p, int dist_3p)
       : mature_id(mature_id), mature_seq(mature_seq), template_seq(template_seq),
-        read_seq(read_seq), read_num(read_num), dist(dist) {}
+        read_seq(read_seq), read_num(read_num), dist(dist), dist_5p(dist_5p),
+        dist_3p(dist_3p) {}
 };
 
 
@@ -120,7 +123,7 @@ vector<Isoform *> detect_one_seq(const string &read_seq, int read_num,
 
     if (is_isoform) {
       hits.push_back(new Isoform(mature_id, mature_seq, template_seq, read_seq,
-                                 read_num, dist_5p + dist_3p));
+                                 read_num, dist_5p + dist_3p, dist_5p, dist_3p));
     }
   }
 
@@ -212,6 +215,8 @@ DataFrame find_isoforms(DataFrame mirnas, DataFrame reads,
   vector<string> result_read_seqs;
   vector<int> result_read_nums;
   vector<int> result_dists;
+  vector<int> result_dists_5p;
+  vector<int> result_dists_3p;
 
   for (Isoform *isoform : isoforms)
   {
@@ -221,6 +226,8 @@ DataFrame find_isoforms(DataFrame mirnas, DataFrame reads,
     result_read_seqs.push_back(isoform->read_seq);
     result_read_nums.push_back(isoform->read_num);
     result_dists.push_back(isoform->dist);
+    result_dists_5p.push_back(isoform->dist_5p);
+    result_dists_3p.push_back(isoform->dist_3p);
   }
 
   DataFrame result = DataFrame::create(
@@ -229,7 +236,9 @@ DataFrame find_isoforms(DataFrame mirnas, DataFrame reads,
       _["template_seq"] = result_template_seqs,
       _["read_seq"] = result_read_seqs,
       _["read_num"] = result_read_nums,
-      _["dist"] = result_dists);
+      _["dist"] = result_dists,
+      _["dist_5p"] = result_dists_5p,
+      _["dist_3p"] = result_dists_3p);
 
   return result;
 }

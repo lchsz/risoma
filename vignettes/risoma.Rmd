@@ -26,39 +26,10 @@ library(risoma)
 risoma is an R package developed to address the need for a comprehensive source of functions for constructing isomiR expression atlases using small RNA sequencing (RNA-seq) experiments. 
 The primary goal of risoma is to provide an intuitive framework for identifying and constructing expression profiles. The package includes functions to assist with various tasks, such as detecting isomiRs, assessing expression metrics across different tissues and developmental stages, calculating tissue specificity indices to evaluate gene expression specificity, clustering, and visualizing expression patterns.
 
-
-# Installation
-
-## Requirments
-```{r eval=FALSE}
-if (!require("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-BiocManager::install(version = "3.20")
-
-BiocManager::install(c("Biostrings", "mirbase.db", "msa", "pwalign"))
-
-```
-
-## Insall from github
-```{r eval = FALSE}
-devtools::install_github("lchsz/risoma")
-```
-
 # Terminology
 
 ## The Isoform
 The isoform is represented by reference miRNA ID, miRNA sequence, read sequence, read account and edit distance between read and reference miRNA.
-
-
-```{r}
-meta_data <- read.csv(sample_info_file,
-                       stringsAsFactors = FALSE,
-                       comment.char = "#")
-fq_file <- file.path(fq_dir, meta_data$fq[[1]])
-mirnas <- load_mirnas("vvi", 13)
-
-detect_one_sample(fq_file, mirnas, max_ed_5p = 2, max_ed_3p = 3)
-```
 
 ## The Isomir data class
 
@@ -72,12 +43,10 @@ Risoma stores results of isomiRs called a IsomirDataSet.
 The main components of an IsomirDataSet object are a list containing the isoforms, 
 a data.frame containing expression profiles, and a list of isomir object.
 
-
 ## Naming and labeling isomiRs
 
 The CIGAR makes it easy to state how an isomiR’s endpoints differ from the annotated ‘reference’ mature found in public databases. 
 For example, the label ‘vvi-miR390-1I21M2I” refers to the isoform of vvi-miR390 whose 5’-end begins 1 nucleotides (nts) upstream of the miRbase reference’s 5’-end and 3’-end terminates 2 nts downstream of the miRBase reference’s 3’-end.
-
 
 # Data input
 
@@ -139,13 +108,11 @@ Aggregate isofoms of samples (replicates) into it's tissue (group).
 
 ### Clustriing isoforms based on reference miRNAs
 
-
 If the sample infomation file and path of coressponding FASTQ and reference 
 micorRNA information are already available, then a IsomirDataSet object can be made by:
 
-
 ```{r}
-isomirs <- detect_isomirs(sample_info_file, fq_dir, mirnas, type = "p5")
+isomirs <- detect_isomirs(sample_info_file, fq_dir, mirnas)
 ```
 
 # Functions to inquiry and view results
@@ -155,7 +122,6 @@ Get all the reference miRNAs which have isoforms.
 ```{r}
 get_ref(isomirs)
 ```
-
 
 ```{r}
 get_tissues(isomirs)
@@ -176,13 +142,6 @@ aln <- aln_isoforms(isomirs, "vvi-miR390")
 aln
 ```
 
-Tissue specificity index
-
-```{r}
-calc_tsi(expr)
-```
-
-
 # Tissue specificity index
 
 To evaluate the variability of expression patterns, we calculated a tissue specificity index (TSI) for each isomiR analogously to the TSI ‘tau’ for mRNAs originally developed by Yanai et al. (7). 
@@ -194,3 +153,17 @@ Specifically, the TSI for a isomiR is calculated as
 $$
 \tau=\frac{\sum_{i}^N (1-x_i)}{N-1}
 $$
+
+
+```{r}
+tsi_df <- calc_tsi(isomirs)
+tsi_df
+```
+
+
+```{r}
+library(ggplot2)
+
+ggplot(tsi_df, aes(x=type, y=tsi)) + geom_violin() + geom_boxplot(width=0.05, fill="black", outlier.color = NA) + stat_summary(fun=median, geom="point", fill="white", shape=21, size=2.5)
+```
+
