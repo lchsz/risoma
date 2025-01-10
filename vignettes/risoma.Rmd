@@ -33,15 +33,12 @@ The isoform is represented by reference miRNA ID, miRNA sequence, read sequence,
 
 ## The Isomir data class
 
-We define isomiR as the all isoforms that clustered based on a reference miRNA.
-The Isomir S4 class contains the mature miRNA ID, mature miRNA sequence, edit distance between isoform and it's reference, and the alignment between isoform and reference which is represented by Compact Idiosyncratic Gapped Alignment Report (CIGAR) strings.
+We define isomiR as the all isoforms that clustered based on a reference miRNA. The Isomir S4 class contains the mature miRNA ID, mature miRNA sequence, edit distance between isoform and it's reference, and the alignment between isoform and reference which is represented by Compact Idiosyncratic Gapped Alignment Report (CIGAR) strings.
 
 
 ## The IsomirDataSet data class
 
-Risoma stores results of isomiRs called a IsomirDataSet.
-The main components of an IsomirDataSet object are a list containing the isoforms, 
-a data.frame containing expression profiles, and a list of isomir object.
+risoma stores results of isomiRs called a IsomirDataSet. The main components of an IsomirDataSet object are a list containing the isoforms, a data.frame containing expression profiles, and a list of isomir object.
 
 ## Naming and labeling isomiRs
 
@@ -120,25 +117,25 @@ isomirs <- detect_isomirs(sample_info_file, fq_dir, mirnas)
 Get all the reference miRNAs which have isoforms.
 
 ```{r}
-get_ref(isomirs)
+has_isomir(isomirs)
 ```
 
 ```{r}
-get_tissues(isomirs)
+get_groups(isomirs)
 ```
 
 ```{r}
-ex_isomir(isomirs, "vvi-miR390")
+ex_isomir(isomirs, "vvi-miR172c")
 ```
 
 ```{r}
-expr <- ex_expr(isomirs, "vvi-miR390")
+expr <- ex_expr(isomirs, "vvi-miR172c")
 
 pheatmap::pheatmap(expr, scale = "row", fontsize_row = 4)
 ```
 
 ```{r}
-aln <- aln_isoforms(isomirs, "vvi-miR390")
+aln <- aln_isoforms(isomirs, "vvi-miR172c")
 aln
 ```
 
@@ -167,3 +164,17 @@ library(ggplot2)
 ggplot(tsi_df, aes(x=type, y=tsi)) + geom_violin() + geom_boxplot(width=0.05, fill="black", outlier.color = NA) + stat_summary(fun=median, geom="point", fill="white", shape=21, size=2.5)
 ```
 
+
+```{r}
+deg <- calc_deg(isomirs, treatment = "flowers-Beginning", control = "flowers-Flowering")  
+deg
+```
+
+```{r}
+has_deg(isomirs, deg)
+```
+
+
+```{r}
+ex_deg(isomirs, deg, "vvi-miR172c")
+```

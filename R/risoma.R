@@ -15,9 +15,9 @@
 #' @return a data.frame with columns: mature_id, read_seq, read_num and dist
 #'
 #' @export
-detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p, type) {
-  if (max_ed_5p <= 0) stop("max_ed_5p should > 0")
-  if( max_ed_3p <= 0) stop("max_ed_3p should > 0")
+detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p) {
+  if (max_ed_5p < 0) stop("max_ed_5p should >= 0")
+  if( max_ed_3p < 0) stop("max_ed_3p should >= 0")
   reads  <- NULL
   if(endsWith(fq_file, ".gz")) {
     reads  <- mark_duplicates_gz(fq_file, 1)
@@ -25,7 +25,7 @@ detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p, type) {
     reads  <-mark_duplicates(fq_file, 1)
   }
 
-  isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p, type)
+  isoforms <- find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p)
   return(isoforms)
 }
 
@@ -45,12 +45,9 @@ detect_one_sample <- function(fq_file, mirnas, max_ed_5p, max_ed_3p, type) {
 detect_isomirs <- function(sample_info_file,
                           fq_dir,
                           mirnas,
-                          max_ed_5p = 2,
-                          max_ed_3p = 3,
-                          min_tpm = 2,
-                          type = "all") {
-
-  isoform_type <- match.arg(type, choices = c("all", "p5", "p3"))
+                          max_ed_5p = 3,
+                          max_ed_3p = 6,
+                          min_tpm = 2) {
 
   meta_data <- read.csv(sample_info_file,
                        stringsAsFactors = FALSE,
@@ -87,30 +84,45 @@ detect_isomirs <- function(sample_info_file,
     )
   }
 
-  message("Detecting isoforms")
-  isoform_list <- lapply(
+  g2s_isoforms <- lapply(
     group,
     detect_one_tissue,
     mirnas = mirnas,
     max_ed_5p = max_ed_5p,
     max_ed_3p = max_ed_3p,
-    min_tpm = min_tpm,
-    type = isoform_type
+    min_tpm = min_tpm
   )
 
-  isoform_list <- isoform_list[sapply(isoform_list, function(x) nrow(x) != 0)]
+  g2isoforms <- lapply(g2s_isoforms, function(s2isoforms) {
+    isoforms <- s2isoforms[[1]]
+    for (i in seq_along(s2isoforms)[-1]) {
+      isoforms_temp <- s2isoforms[[i]][, c("id", "tpm")]
+      isoforms <- merge(x = isoforms, y = isoforms_temp, by = "id")
+      isoforms$tpm <- rowMeans(isoforms[, c("tpm.x", "tpm.y")])
+      isoforms$tpm.x <- NULL
+      isoforms$tpm.y <- NULL
+    }
+    isoforms
+  })
 
-  message("Generating expression profiile from isomiR list")
-  expr <- generate_expr(isoform_list)
+  g2isoforms <- g2isoforms[sapply(g2isoforms, function(x) nrow(x) != 0)]
+
+  message("Generating expression profiile for samples")
+  sample_expr <- generate_sample_expr(g2s_isoforms)
+
+  message("Generating expression profiile for groups")
+  group_expr <- generate_group_expr(g2isoforms)
 
   message("Clustriing isoforms based on reference mature microRNAs")
-  isomir_list <- cluster_isoforms(isoform_list)
+  ref2isomir <- cluster_isoforms(g2isoforms)
 
   new(
     "IsomirDataSet",
-    isoform_list = isoform_list,
-    expr = expr,
-    isomir_list = isomir_list
+    sample_info = meta_data,
+    group2isoforms = g2isoforms,
+    sample_expr = sample_expr,
+    group_expr = group_expr,
+    ref2isomir = ref2isomir
   )
 }
 
@@ -135,43 +147,37 @@ detect_one_tissue <- function(sample_info,
                             mirnas,
                             max_ed_5p,
                             max_ed_3p,
-                            min_tpm,
-                            type) {
-  # message("Detecting isoforms for tissue: ", sample_info["group"][[1]])
-  tissue_isoforms <- apply(sample_info, 1, function(x) {
-    sample_name <- x["name"]
+                            min_tpm) {
+  s2isoforms <- apply(sample_info, 1, function(x) {
+    message("Detecting isoforms for sample: ", x["name"])
     fq_file <- x["fq"]
-    isoforms <- detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p, type)
+    isoforms <- detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p)
+    isoforms$id <- paste(isoforms$mature_id, isoforms$read_seq, sep = ":")
     isoforms$tpm <- calc_tpm(isoforms)
     isoforms <- subset(isoforms, tpm >= min_tpm)
     isoforms$cigar <- calc_cigar(isoforms)
     isoforms
   })
 
-  isoforms <- tissue_isoforms[[1]]
-  for (i in seq_along(tissue_isoforms)[-1]) {
-    isoforms_temp <- tissue_isoforms[[i]][, c("read_seq", "tpm")]
-    isoforms <- merge(x = isoforms, y = isoforms_temp, by = "read_seq")
-    isoforms$tpm <- rowMeans(isoforms[, c("tpm.x", "tpm.y")])
-    isoforms$tpm.x <- NULL
-    isoforms$tpm.y <- NULL
-  }
+  ids <- unique(unlist(lapply(s2isoforms, function(isoforms) isoforms$id)))
 
-  isoforms
+  lapply(s2isoforms, function(isoforms) {
+    isoforms[isoforms$id %in% ids, ]
+  })
 }
 
 
-cluster_isoforms <- function(isoform_list) {
-  df_list <- lapply(isoform_list, function(x) {
-    x[, c("mature_id", "mature_seq", "template_seq", "read_seq", "dist",
+cluster_isoforms <- function(g2isoforms) {
+  g2isoforms <- lapply(g2isoforms, function(isoforms) {
+    isoforms[, c("mature_id", "mature_seq", "template_seq", "read_seq", "dist",
           "dist_5p", "dist_3p", "cigar")]
   })
 
-  df <- dplyr::bind_rows(df_list)
-  df <- dplyr::distinct(df)
+  isoforms <- dplyr::bind_rows(g2isoforms)
+  isoforms <- dplyr::distinct(isoforms)
 
-  group <- split(df, df$mature_id)
-  isomir_list <- lapply(group, function(x) {
+  group <- split(isoforms, isoforms$mature_id)
+  ref2isomir <- lapply(group, function(x) {
     x <- dplyr::arrange(x, desc(dist))
     x$cigar[x$dist == 0] <- x$mature_id[[1]]
     new(
@@ -183,28 +189,59 @@ cluster_isoforms <- function(isoform_list) {
       dist = x$dist,
       dist_5p = x$dist_5p,
       dist_3p = x$dist_3p,
-      cigars = x$cigar
+      cigars = x$cigar,
+      ids = make.unique(x$cigar)
     )
   })
 
-  isomir_list[sapply(isomir_list, function(x) has_ref(x))]
+  ref2isomir[sapply(ref2isomir, function(isomir) has_ref(isomir))]
 }
 
 
 #' Extract expression profile of each sample replicate from isomiRs
 #'
-#' @param isomir_list isomiRs of all samples
+#' @param g2isoforms isomiRs of all samples
 #' @return a data.frame of expression
-generate_expr <- function(isoform_list) {
-  tissue_name <- names(isoform_list[1])
-  expr <- isoform_list[[1]][, c("read_seq", "tpm")]
-  expr <- dplyr::distinct(expr, read_seq, .keep_all = TRUE)
-  colnames(expr)[colnames(expr) == "tpm"] <- tissue_name
-  for (i in seq_along(isoform_list)[-1]) {
-    tissue_name <- names(isoform_list[i])
-    expr_temp <- isoform_list[[i]][, c("read_seq", "tpm")]
-    expr_temp <- dplyr::distinct(expr_temp, read_seq, .keep_all = TRUE)
-    colnames(expr_temp)[colnames(expr_temp) == "tpm"] <- tissue_name
+generate_group_expr <- function(g2isoforms) {
+  g_name <- names(g2isoforms[1])
+  expr <- g2isoforms[[1]][, c("read_seq", "tpm")]
+  expr <- expr[!duplicated(expr$read_seq), ]
+  colnames(expr)[colnames(expr) == "tpm"] <- g_name
+  for (i in seq_along(g2isoforms)[-1]) {
+    g_name <- names(g2isoforms[i])
+    expr_temp <- g2isoforms[[i]][, c("read_seq", "tpm")]
+    expr_temp <- expr_temp[!duplicated(expr_temp$read_seq), ]
+    colnames(expr_temp)[colnames(expr_temp) == "tpm"] <- g_name
+    expr <- merge(x = expr, y = expr_temp, by = "read_seq", all = TRUE)
+  }
+
+  rownames(expr) <- expr$read_seq
+  expr$read_seq <- NULL
+  expr[is.na(expr)] = 0
+
+  return(expr)
+}
+
+
+generate_sample_expr <- function(g2s_isoforms) {
+  g2expr <- lapply(g2s_isoforms, function(s2isoforms) {
+    s_name <- names(s2isoforms[1])
+    expr <- s2isoforms[[1]][, c("read_seq", "read_num")]
+    expr <- unique(expr)
+    colnames(expr)[colnames(expr) == "read_num"] <- s_name
+    for (i in seq_along(s2isoforms)[-1]) {
+      s_name <- names(s2isoforms[i])
+      expr_temp <- s2isoforms[[i]][, c("read_seq", "read_num")]
+      expr_temp <- unique(expr_temp)
+      colnames(expr_temp)[colnames(expr_temp) == "read_num"] <- s_name
+      expr <- merge(x = expr, y = expr_temp, by = "read_seq")
+    }
+    expr
+  })
+
+  expr <- g2expr[[1]]
+  for (i in seq_along(g2expr)[-1]) {
+    expr_temp <- g2expr[[i]]
     expr <- merge(x = expr, y = expr_temp, by = "read_seq", all = TRUE)
   }
 

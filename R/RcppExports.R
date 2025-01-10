@@ -22,8 +22,8 @@ calc_edit_dist <- function(s1, s2) {
 #' @param maxEd3p the maximum distance between 3' region of reads with
 #'   reference miRNA
 #' @return a data.frame with columns: mature_ID, read_seq, read_num and dist
-find_isoforms <- function(mirnas, reads, max_ed_5p, max_ed_3p, type) {
-    .Call(`_risoma_find_isoforms`, mirnas, reads, max_ed_5p, max_ed_3p, type)
+find_isoforms <- function(mirnas, reads, max_ed_5p, max_ed_3p) {
+    .Call(`_risoma_find_isoforms`, mirnas, reads, max_ed_5p, max_ed_3p)
 }
 
 #' Mark duplicates in the FASTQ file

@@ -4,7 +4,7 @@
 \alias{load_mirnas}
 \title{Load miRNAs of a species from mirbase.db}
 \usage{
-load_mirnas(spe, seed_size = 13)
+load_mirnas(spe, seed_size = 13, flank_5p_len = 5, flank_3p_len = 5)
 }
 \arguments{
 \item{spe}{species}

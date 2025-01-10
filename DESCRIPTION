@@ -11,13 +11,15 @@ Encoding: UTF-8
 LazyData: true
 biocViews: 
 Imports: 
+    apeglm,
     Biostrings,
     dplyr,
     mirbase.db,
     msa,
     pheatmap,
     pwalign,
-    Rcpp
+    Rcpp,
+    stringr
 RoxygenNote: 7.3.2
 LinkingTo: 
     Rcpp

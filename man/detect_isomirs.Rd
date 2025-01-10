@@ -9,10 +9,9 @@ detect_isomirs(
   sample_info_file,
   fq_dir,
   mirnas,
-  max_ed_5p = 2,
-  max_ed_3p = 3,
-  min_tpm = 2,
-  type = "all"
+  max_ed_5p = 3,
+  max_ed_3p = 6,
+  min_tpm = 2
 )
 }
 \arguments{

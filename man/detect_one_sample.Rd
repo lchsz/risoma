@@ -5,7 +5,7 @@
 \title{============================== exported functions =============================
 Find isoform from a sample}
 \usage{
-detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p, type)
+detect_one_sample(fq_file, mirnas, max_ed_5p, max_ed_3p)
 }
 \arguments{
 \item{fq_file}{FASTQ of a samle}

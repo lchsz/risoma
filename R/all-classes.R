@@ -9,9 +9,11 @@
 setClass(
   "IsomirDataSet",
   slots = c(
-    isoform_list = "ANY",
-    expr = "ANY",
-    isomir_list = "ANY"
+    sample_info = "ANY",
+    group2isoforms = "ANY",
+    sample_expr = "ANY",
+    group_expr = "ANY",
+    ref2isomir = "ANY"
   )
 )
 
@@ -34,7 +36,8 @@ setClass(
     dist = "integer",
     dist_5p = "integer",
     dist_3p = "integer",
-    cigars = "character"
+    cigars = "character",
+    ids = "character"
   )
 )
 

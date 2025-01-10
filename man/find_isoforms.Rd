@@ -4,7 +4,7 @@
 \alias{find_isoforms}
 \title{Find isoform from reads based on reference miRNAs}
 \usage{
-find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p, type)
+find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p)
 }
 \arguments{
 \item{mirnas}{a data.frame storing mature miRNA ID (matrue_ID),

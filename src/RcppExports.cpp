@@ -23,8 +23,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // find_isoforms
-DataFrame find_isoforms(DataFrame mirnas, DataFrame reads, int max_ed_5p, int max_ed_3p, std::string type);
-RcppExport SEXP _risoma_find_isoforms(SEXP mirnasSEXP, SEXP readsSEXP, SEXP max_ed_5pSEXP, SEXP max_ed_3pSEXP, SEXP typeSEXP) {
+DataFrame find_isoforms(DataFrame mirnas, DataFrame reads, int max_ed_5p, int max_ed_3p);
+RcppExport SEXP _risoma_find_isoforms(SEXP mirnasSEXP, SEXP readsSEXP, SEXP max_ed_5pSEXP, SEXP max_ed_3pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -32,8 +32,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< DataFrame >::type reads(readsSEXP);
     Rcpp::traits::input_parameter< int >::type max_ed_5p(max_ed_5pSEXP);
     Rcpp::traits::input_parameter< int >::type max_ed_3p(max_ed_3pSEXP);
-    Rcpp::traits::input_parameter< std::string >::type type(typeSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p, type));
+    rcpp_result_gen = Rcpp::wrap(find_isoforms(mirnas, reads, max_ed_5p, max_ed_3p));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -64,7 +63,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_risoma_calc_edit_dist", (DL_FUNC) &_risoma_calc_edit_dist, 2},
-    {"_risoma_find_isoforms", (DL_FUNC) &_risoma_find_isoforms, 5},
+    {"_risoma_find_isoforms", (DL_FUNC) &_risoma_find_isoforms, 4},
     {"_risoma_mark_duplicates", (DL_FUNC) &_risoma_mark_duplicates, 2},
     {"_risoma_mark_duplicates_gz", (DL_FUNC) &_risoma_mark_duplicates_gz, 2},
     {NULL, NULL, 0}
