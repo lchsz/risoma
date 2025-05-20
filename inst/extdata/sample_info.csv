@@ -1,0 +1,9 @@
+name,fq,group,tissue,developmental_stage
+SRR1528372,SRR1528372.fastq.gz,Inflorescence_Y,Inflorescences,Young
+SRR1528373,SRR1528373.fastq.gz,Inflorescence_Y,Inflorescences,Young
+SRR1528374,SRR1528374.fastq.gz,Inflorescence_WD,Inflorescences,Well-developed
+SRR1528375,SRR1528375.fastq.gz,Inflorescence_WD,Inflorescences,Well-developed
+SRR1528376,SRR1528376.fastq.gz,Flower_FB,flowers,Beginning of flowering
+SRR1528377,SRR1528377.fastq.gz,Flower_FB,flowers,Beginning of flowering
+SRR1528378,SRR1528378.fastq.gz,Flower_F,flowers,Flowering
+SRR1528379,SRR1528379.fastq.gz,Flower_F,flowers,Flowering

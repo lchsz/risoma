@@ -1,0 +1,44 @@
+Package: risoma
+Title: Comprehensive Analysis of microRNA Isoforms (isomiRs) with Enhanced 
+        Detection Sensitivity and Parameter Flexibility
+Version: 0.1.0
+Description: risoma integrates modules for miRBase database loading, isomiR 
+             identification, expression quantification, differential analysis, 
+             and interactive visualization. The tool innovatively introduces a 
+             strategy of independently controlling insertion-deletion (InDel) 
+             and single nucleotide polymorphism (SNP) thresholds across distinct 
+             regions (5\' end, central region, 3\' end) through an improved 
+             "seed-and-extension" algorithm, significantly enhancing the 
+             detection sensitivity for complex variants. 
+Authors@R: 
+  person("Cheng-Hui", "Li",
+        email = "lichenghui1979@163.com",
+        role = c("cre", "aut"))
+License: GPL-3
+LazyData: true
+Imports: 
+    apeglm,
+    Biostrings,
+    DESeq2,
+    dplyr,
+    ggplot2,
+    mirbase.db,
+    msa,
+    pheatmap,
+    Rcpp,
+    stringr
+Depends: 
+    R (>= 4.4)
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat
+LinkingTo: 
+    Rcpp
+BugReports: https://github.com/lchsz/risoma/issues
+Author: Cheng-Hui Li [aut, cre] lichenghui1979@163.com
+Maintainer: Cheng-Hui Li <lichenghui1979@163.com>
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Config/testthat/edition: 3
+VignetteBuilder: knitr

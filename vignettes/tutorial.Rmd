@@ -1,0 +1,260 @@
+---
+title: "Tutorial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{tutorial}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(risoma)
+```
+
+# Introduction
+
+The `risoma` package addresses the limitations of existing analytical tools in functional integration and parameter flexibility for microRNA isoform (isomiR) research.
+The tool innovatively introduces a strategy of independently controlling insertion-deletion (InDel) and single nucleotide polymorphism (SNP) thresholds across distinct regions (5' end, central region, and 3' end) through an improved "seed-and-extension" algorithm, significantly enhancing the detection sensitivity for complex variants.
+`risoma` integrates modules for miRBase database loading, isomiR identification, expression quantification (TPM normalization), and differential analysis.
+It employs an S4 class system (*Isomir* and *IsomirDataSet*) for efficient cross-sample data management.
+Compared to existing tools, `risoma` exhibits marked advantages in detecting central-region SNPs and parameter flexibility, covering more unique variant types.
+`risoma` fills the gaps in functional comprehensiveness and user experience of current tools, providing robust technical support for unraveling isomiR regulatory networks.
+
+# Data Structures
+
+## Isomir Class
+
+An instance of this class represents a microRNA isoform (isomiR) derived from a reference miRNA.
+Its data structure includes the following key attributes:
+
+-   **Reference Information**: Reference miRNA ID (*mature_id*), sequence (*mature_seq*), seed sequence(*seed_seq*)
+-   **Alignment Features**: Template sequences containing flanking regions, sequencing read sequences and their abundance, insertion-deletion (InDel) counts at the 5' and 3' ends, mismatch (SNP) counts (including seed regions), sequence total distance, and a CIGAR (Compact Idiosyncratic Gapped Alignment Report) string detailing alignment specifics.
+-   **Identifiers and Alignment Results**: Unique isoform ID (*ids*) and multiple sequence alignment (MSA) results against the reference miRNA.
+
+## IsomirDataSet Class
+
+This class integrates isomiR expression data across multiple samples.
+Its core components include:
+
+-   **Sample Metadata** (*sample_info*): A data frame storing sample names, experimental groups, and file names.
+-   **Group-level isoforms** (*group2isoforms*): A list of isoforms grouped by experimental groups (e.g., tissue types or treatment conditions).\
+-   **Isoform Expression Matrices**:
+    -   *Sample-level matrix* (*sample_expr*): Rows represent isoforms, columns represent samples, with values indicating transcripts per million (TPM) normalized expression levels.
+    -   *Group-level matrix* (*group_expr*): Aggregated TPM mean values based on experimental groups (e.g., tissue types or treatment conditions).
+-   **Isoform Clustering Information** (*ref2isomir*): A list of isoforms grouped by reference miRNA to support cluster analysis based on sequence similarity.
+
+# Construction of isomiR Expression Profiles
+
+## Data input
+
+```{r}
+sample_info_file <- system.file("extdata", "sample_info.csv", package = "risoma")
+fq_dir <- system.file("extdata", "fastqs", package = "risoma")
+```
+
+### Input File Specifications
+
+-   **Sample Metadata File (sample_info_file)**: The metadata file must include the following columns:
+
+    -   Column 1: Sample names.
+    -   Column 2: Filenames of sequencing data (FASTQ or compressed FASTQ files).
+    -   Column 3: experimental groups.
+
+-   **Data Directory**: Sequencing data files (FASTQ or compressed formats) must be stored in a user-specified directory.
+
+-   **Reference miRNA Database**: Species-specific miRNA information is retrieved from miRBase using the `load_mirnas(species_code, seed_len)` function.
+
+    Parameters:
+
+    -   `species_code`: miRBase species identifier (e.g., "ath" for *Arabidopsis thaliana*).
+    -   `seed_len`: Seed sequence length (default: 16 nucleotides).
+
+## Load microRNA data from miRBase
+
+```{r load miRNAs}
+vvi_mirnas <- load_mirnas("vvi") 
+head(vvi_mirnas)
+```
+
+This function retrieves microRNA (miRNA) data from the miRBase database for a specified species.
+It extracts mature miRNA sequences, seed sequences, and flanking regions, and returns the data in a structured data frame.
+
+Reference miRNA sequences for grape were loaded from miRBase via the `load_mirnas("vvi")` function, yielding 186 mature miRNA sequences and their precursor information, including seed sequences and flanking regions.
+
+## Detect isomiRs
+
+```{r detect isomiRs}
+isomir_dataset <- detect_isomirs(sample_info_file, fq_dir, vvi_mirnas, min_tpm = 5)
+```
+
+This function detects isomiRs from small RNA-Seq data for multiple samples.
+It processes FASTQ files, identifies isomiRs, and generates expression profiles for samples and groups.
+The results are returned as an IsomirDataSet object, which can be used for further analysis.
+
+The `detect_isomirs()` function was executed with the following parameters: expression threshold ≥5 TPM (transcripts per million), maximum InDels of 3 at the 5' and 3' ends, and a maximum of 1 SNP per region (5'/3' ends and central seed region).
+
+The resulting *IsomirDataSet* object integrated sample-level and group-level expression matrices, alignment details, and metadata.
+
+## Count isoforms per reference miRNA
+
+Further analyses are performed on an IsomirDataSet object constructed using publicly available small RNA sequencing datasets from the Gene Expression Omnibus (GEO) database (accession: GSE59802).
+This dataset comprises 50 samples across 25 critical developmental stages, with two biological replicates per stage.
+
+```{r}
+data("isomirs")
+```
+
+```{r get isoform number}
+get_isoform_num(isomirs)
+```
+
+This method calculates the number of isoforms associated with each reference miRNA in an IsomirDataSet object.
+It returns a vector of counts for reference miRNAs.
+
+## Calculate the number of expressed isoforms per group
+
+```{r calc expression number}
+expr_num <- calc_group_expr_num(isomirs)
+
+head(expr_num)
+```
+
+This method calculates the number of expressed isomiRs for each group in an IsomirDataSet object.
+It categorizes isomiRs into three types:
+
+-   Total: The total number of isomiRs expressed in each group.
+
+-   Organ-Specific: The number of isomiRs expressed in only one group.
+
+-   Common: The number of isomiRs expressed in all groups.
+
+Plot total number of expressed isoforms per group:
+
+```{r plot total number of isoforms, fig.width=5, fig.height=3}
+library(ggplot2)
+
+expr_num <- calc_group_expr_num(isomirs)
+ggplot(expr_num, aes(x = group, y = total)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip() +
+  xlab("") + ylab("number of isomiRs") + 
+  labs(title = "number of isomiRs at each developmental stage") +
+  theme(text = element_text(size = 12), plot.title = element_text(hjust = 0.5))
+```
+
+Plot the number of isoforms that are specifically expressed in each experimental group:
+
+```{r plot the number of specifically expressed isoforms, fig.width=5, fig.height=3}
+ggplot(expr_num, aes(x = group, y = organ_specific)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip() +
+  xlab("") + ylab("number of isomiRs") + 
+  labs(title = "Distribution of organ-specific isomiRs") +
+  theme(text = element_text(size = 12), plot.title = element_text(hjust = 0.5))
+```
+
+## Tissue Specificity Index (TSI)
+
+To quantitatively assess the spatiotemporal specificity of isomiR expression across tissues or experimental conditions, `risoma`employs the Tissue Specificity Index (TSI), a metric that evaluates the bias in expression distribution.
+The TSI ranges from 0 to 1, where:
+
+-   TSI = 0: Indicates uniform expression across all tissues/conditions.
+
+-   TSI = 1: Indicates exclusive expression in a single tissue/condition.
+
+```{r}
+tsi_df <- calc_tsi(isomirs)
+
+head(tsi_df)
+```
+
+Generates a violin plot with overlaid boxplots to visualize the distribution of TSI values for reference miRNAs and isoforms.
+
+```{r plot TSI, fig.width=5, fig.height=3}
+ggplot(tsi_df, aes(x = type, y = tsi)) + geom_violin() + 
+  geom_boxplot(width = 0.05, fill = "black", outlier.color = NA) + 
+  stat_summary(fun = median, geom = "point", fill = "white", shape = 21, size = 2.5) +
+  xlab("isomiR type") + ylab("TSI") + 
+  theme(text = element_text(size = 12))
+```
+
+## Inspect a specific isomiR
+
+Extract isomiR data for a specific reference miRNA.
+For example `vvi-miR156f` and its isoforms were analyzed by:
+
+```{r vvi-miR156f}
+isomir_156<- get_isomir_by_ref(isomirs, "vvi-miR156f")
+
+isomir_156
+```
+
+Expression data were exported via:
+
+```{r miR156f expr}
+expr_156 <- get_expr_by_ref(isomirs, "vvi-miR156f")
+expr_156
+```
+
+This method extracts expression data for isomiRs associated with a specified reference microRNA.
+It is useful for analyzing the expression patterns of isomiRs derived from a specific microRNA across different conditions or groups.
+
+Plot heatmap of expression values for isoforms of `vvi-miR156f`:
+
+```{r, fig.width=5, fig.height=3}
+pheatmap::pheatmap(expr_156, scale="row", fontsize_row = 10, width=6, height=5)
+```
+
+Extract aligned isoforms to a `vvi-miR156f`:
+
+```{r}
+get_alignment_by_ref(isomirs, "vvi-miR156f")
+```
+
+This method extract the alignment of the sequences of isomiRs and their reference template sequence using multiple sequence alignment (MSA).
+It is useful for visualizing sequence variations and identifying potential editing events in isomiRs.
+
+# Perform differential expression analysis on isomiRs
+
+```{r}
+data("isomirs")
+```
+
+`get_deg_data` extracts expression data and sample information from an `IsomirDataSet` object for specified treatment and control groups, preparing it for differential expression analysis.
+
+```{r get deg data}
+deg_data <- get_deg_data(isomirs, treatment = "Flower_FB", control = "Inflorescence_WD")
+```
+
+```{r}
+dds <- DESeq2::DESeqDataSetFromMatrix(countData = deg_data$expr,
+                                      colData = deg_data$sample_info,
+                                      design = ~ group)
+dds <- DESeq2::DESeq(dds)
+res <- DESeq2::lfcShrink(
+  dds,
+  coef = DESeq2::resultsNames(dds)[[2]],
+  type = "apeglm",
+  quiet = TRUE
+)
+res <- res[!(res$baseMean == 0 &
+              is.na(res$padj) & is.na(res$pvalue) &
+              is.na(res$log2FoldChange)), ]
+res <- res[!res$log2FoldChange == 0, ]
+res <- res[!(is.na(res$pvalue) & is.na(res$padj)), ]
+res <- res[!is.na(res$padj), ]
+res <- res[res$padj <= 0.05, ]
+
+result <- as.data.frame(res[order(res$log2FoldChange), ])
+head(result)
+```

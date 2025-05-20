@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:\\Program Files\\R\\R-4.4.3\\include",
+                "C:\\Users\\bc\\AppData\\Local\\R\\win-library\\4.4\\Rcpp\\include",
+                "C:\\Users\\bc\\AppData\\Local\\R\\win-library\\4.4\\BH\\include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "C:\\rtools44\\x86_64-w64-mingw32.static.posix\\bin\\g++.exe",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17"
+        }
+    ],
+    "version": 4
+}
